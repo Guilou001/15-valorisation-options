@@ -75,7 +75,11 @@ def lsm_put(s: float, k: float, r: float, sigma: float, t: float, ex_per_year: i
     paths = gbm_paths(s, r, sigma, t, n_steps, n_paths, rng)
     coefs, cash, tau = _exercise_rule(paths, k, r, dt, n_basis)
     if out_of_sample:
-        paths = gbm_paths(s, r, sigma, t, n_steps, n_paths, np.random.default_rng(seed + 1))
+        # décalage franc : avec « seed + 1 », les trajectoires de valorisation de la graine g
+        # étaient exactement les trajectoires d'estimation de la graine g + 1, ce qui corrèle
+        # entre elles les répétitions d'une expérience multi-graines
+        paths = gbm_paths(s, r, sigma, t, n_steps, n_paths,
+                          np.random.default_rng(seed + 1_000_000))
         cash = np.maximum(k - paths[:, -1], 0.0)
         tau = np.full(len(paths), n_steps)
         stopped = np.zeros(len(paths), dtype=bool)

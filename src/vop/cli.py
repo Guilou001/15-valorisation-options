@@ -38,7 +38,10 @@ def lab(out: Path = Path("results"), n_paths: int = 100_000) -> None:
     # 1. convergence CRR -> Black-Scholes en 1/n
     s0, sig, tt = 40.0, 0.20, 1.0
     truth = bs_put(s0, K, R, sig, tt)
-    ns = np.array([25, 50, 100, 200, 400, 800, 1600, 3200])
+    # grille de n PAIRS seulement : l'arbre CRR oscille selon la parité (un n impair ne place
+    # aucun noeud terminal à la monnaie), et mélanger les deux parités dans la même régression
+    # faisait sortir une pente de -0,98 là où la théorie donne -1
+    ns = np.array([50, 100, 200, 400, 800, 1600, 3200])
     errs = np.array([abs(crr_put(s0, K, R, sig, tt, int(n)) - truth) for n in ns])
     pd.DataFrame({"n": ns, "erreur": errs}).to_csv(tables / "convergence_crr.csv", index=False)
     figures.fig_convergence(ns, errs, figs / "convergence_crr.png")
@@ -71,7 +74,9 @@ def lab(out: Path = Path("results"), n_paths: int = 100_000) -> None:
     # 4. le biais du LSM selon la base, en et hors échantillon (cas central 40/0,2/1) ;
     # l'expérience est MULTI-GRAINES : un verdict tiré d'une seule graine est un tirage,
     # pas une mesure (leçon de la contre-vérification adversariale)
-    fd_ref = 2.314
+    # la référence vient de la table transcrite, pas d'un littéral : c'est la valeur AMÉRICAINE
+    # par différences finies du cas 40 / 0,20 / 1 an publiée par Longstaff-Schwartz
+    fd_ref = next(fd for s_, sig_, t_, fd, *_ in TABLE_1 if (s_, sig_, t_) == (40.0, 0.20, 1.0))
     n_seeds = 16
     n_bias_paths = 50_000
     bias_rows = []

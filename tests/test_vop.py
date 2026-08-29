@@ -117,3 +117,34 @@ def test_heston_put_call_parity():
     c = heston_call(**hp)
     p = heston_put(**hp)
     assert c - p == pytest.approx(100.0 - 95.0 * np.exp(-0.03), abs=1e-8)
+
+
+def test_crr_refuse_un_type_d_exercice_inconnu():
+    with pytest.raises(ValueError):
+        crr_put(40.0, 40.0, 0.06, 0.20, 1.0, 100, "asiatique")
+    # le garde-fou d'alignement bermudéen existait mais n'était pas testé
+    with pytest.raises(ValueError):
+        crr_put(40.0, 40.0, 0.06, 0.20, 1.0, 999, "bermudan", 50)
+
+
+def test_lsm_hors_echantillon_est_borne_par_la_valeur_bermudeenne():
+    # la règle d'exercice estimée, appliquée à des trajectoires neuves, ne peut pas battre la
+    # règle optimale : l'estimateur est biaisé vers le BAS par construction
+    v_out, se = lsm_put(40.0, 40.0, 0.06, 0.20, 1.0, 50, 20_000, n_basis=3, seed=11,
+                        out_of_sample=True)
+    v_in, _ = lsm_put(40.0, 40.0, 0.06, 0.20, 1.0, 50, 20_000, n_basis=3, seed=11)
+    borne = crr_put(40.0, 40.0, 0.06, 0.20, 1.0, 1000, "bermudan", 50)
+    assert v_out <= v_in + 3 * se
+    assert v_out <= borne + 3 * se
+
+
+def test_les_trajectoires_de_valorisation_ne_recyclent_pas_une_autre_graine():
+    # « seed + 1 » faisait des trajectoires de valorisation de la graine g les trajectoires
+    # d'estimation de la graine g + 1 : deux répétitions voisines n'étaient plus indépendantes
+    from vop.lsm import gbm_paths
+
+    a = gbm_paths(40.0, 0.06, 0.20, 1.0, 10, 64, np.random.default_rng(101))
+    v_a, _ = lsm_put(40.0, 40.0, 0.06, 0.20, 1.0, 10, 64, n_basis=3, seed=100, out_of_sample=True)
+    b = gbm_paths(40.0, 0.06, 0.20, 1.0, 10, 64, np.random.default_rng(100 + 1_000_000))
+    assert not np.allclose(a, b)
+    assert np.isfinite(v_a)

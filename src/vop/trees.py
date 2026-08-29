@@ -17,6 +17,8 @@ def crr_put(s: float, k: float, r: float, sigma: float, t: float, n: int,
 
     Pour le bermudéen, n doit être un multiple de ex_per_year x t (alignement exact).
     """
+    if exercise not in ("european", "american", "bermudan"):
+        raise ValueError(f"exercise doit valoir european, american ou bermudan, reçu {exercise!r}")
     dt = t / n
     u = np.exp(sigma * np.sqrt(dt))
     d = 1.0 / u

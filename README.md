@@ -16,16 +16,17 @@ d'entrevue des postes de pricing et de validation de modèles, poussé au bout.
    gardiens testés : la colonne Black-Scholes publiée colle à notre formule au millième
    sur les 20 lignes, et notre arbre bermudéen colle à leur colonne différences finies à
    un demi-cent près. (Mesuré.)
-2. **La convergence de l'arbre CRR est au taux théorique : pente mesurée -0,98 pour une
-   théorie à -1** (erreur en 1/n, log-log sur n de 25 à 3 200). Et l'intervalle de
+2. **La convergence de l'arbre CRR est au taux théorique : pente mesurée -1,00 pour une
+   théorie à -1** (erreur en 1/n, log-log sur sept n PAIRS de 50 à 3 200 ; l'arbre oscille
+   selon la parité de n, et mélanger les deux parités donnait -0,98). Et l'intervalle de
    confiance Monte Carlo « à 95 % » contient la vraie valeur 94,0 à 96,2 fois sur 100
    (400 répétitions par taille, dans la bande d'échantillonnage du test). Un IC se
    vérifie, il ne se déclare pas. (Mesuré.)
 3. **Les deux controverses du LSM sont mesurées, en multi-graines.** Sur 16 graines
    indépendantes : la variante à trajectoires neuves retombe sur la vraie valeur
-   bermudéenne quelle que soit la base (2,3134 à 2,3144 contre 2,3140 à l'arbre) ; la
-   réutilisation des trajectoires d'estimation crée un PETIT biais haussier, +0,2 à
-   +0,5 cent, qui CROÎT avec le nombre de fonctions de base : le surapprentissage
+   bermudéenne à un cent près dès trois polynômes (2,3081 à 2,3095 contre 2,3140 à l'arbre) ; la
+   réutilisation des trajectoires d'estimation crée un biais haussier de +0,8 à
+   +1,0 cent, qui CROÎT avec le nombre de fonctions de base : le surapprentissage
    existe, il se compte en cents, et une seule graine ne peut pas le voir (la première
    version de ce dépôt s'y était laissée prendre, corrigé par la contre-vérification).
    Heston ferme la marche : son Monte Carlo retombe sur sa formule semi-fermée à 0,69
@@ -57,7 +58,7 @@ antithétiques. Le PDF est public (miroir ETH Zurich) et jamais commité.
 
 **Comment lire cette figure.** L'erreur absolue de l'arbre européen contre Black-Scholes,
 en log-log : la droite de pente -1 est la théorie (erreur en 1/n), les points la suivent
-(pente mesurée -0,98). Doubler les pas divise l'erreur par deux : quiconque a « vérifié
+(pente mesurée -1,00, sur des n pairs). Doubler les pas divise l'erreur par deux : quiconque a « vérifié
 son arbre sur trois valeurs » n'a pas vu cette droite ; elle est le vrai certificat. Une
 condition est déclarée : la droite est lisse parce que le cas montré est à la monnaie
 (S = K = 40), où le prix d'exercice tombe sur un nœud de l'arbre à n pair ; hors de ce
@@ -109,11 +110,12 @@ que l'erreur type est calculée sur les PAIRES, pas sur les trajectoires.
 **Comment lire cette figure.** Le cas central (S = 40, volatilité 0,20, 1 an ; référence
 2,314 $), estimé avec 2 à 8 polynômes de Laguerre, chaque point étant la MOYENNE de
 16 graines indépendantes (barres : deux erreurs types entre graines ; 50 000 trajectoires
-par graine). L'orange (trajectoires neuves) reste collé à la référence : l'estimateur à
-biais bas garanti est ici quasi sans biais. Le bleu (réutilisation, le choix du papier)
-passe AU-DESSUS dès trois polynômes et s'en éloigne à mesure que la base grossit
-(+0,33 cent à 3 polynômes, +0,51 à 8, `results/tables/biais_lsm.csv`) : le
-surapprentissage de la règle d'exercice gonfle le prix, d'un demi-cent ici. La leçon de
+par graine). L'orange (trajectoires neuves) reste un demi-cent SOUS la référence, ce que
+la théorie prédit : appliquer une règle d'exercice estimée à des trajectoires neuves donne
+un estimateur biaisé vers le bas par construction. Le bleu (réutilisation, le choix du
+papier) passe AU-DESSUS dès trois polynômes, et l'écart entre les deux courbes croît avec
+la base (+0,86 cent à 3 polynômes, +1,02 à 8, `results/tables/biais_lsm.csv`) : le
+surapprentissage de la règle d'exercice gonfle le prix d'environ un cent ici. La leçon de
 méthode vaut plus que le demi-cent : à une seule graine, le signe de l'écart bascule au
 hasard, et la première version de cette expérience concluait l'inverse (déclaré ; la
 contre-vérification adversariale l'a attrapé, l'expérience est désormais multi-graines).
@@ -182,7 +184,7 @@ Les tests, tous fermés :
 
 The only repo in the portfolio with NO market data: every truth is a closed form or a
 published table. (1) The CRR tree's convergence to Black-Scholes is measured at slope
--0.98 on log-log (theory: -1, error in 1/n). (2) Longstaff-Schwartz (2001) Table 1 is
+-1.00 on log-log over even step counts (theory: -1, error in 1/n). (2) Longstaff-Schwartz (2001) Table 1 is
 replicated as what it actually is: BERMUDAN puts exercisable 50 times a year (the detail
 naive replications miss). Our LSM (100k antithetic paths, weighted Laguerre basis)
 matches all 20 published cases within 2 combined standard errors, max gap 3.7 cents to
