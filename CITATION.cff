@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "Pour citer ce dépôt, utilisez les métadonnées ci-dessous."
+title: "valorisation-options : construire un pricer, puis prouver qu'il est juste"
+authors:
+  - family-names: "Vaudescal"
+    given-names: "Guillaume"
+repository-code: "https://github.com/Guilou001/15-valorisation-options"
+license: MIT
+date-released: "2026-08-29"

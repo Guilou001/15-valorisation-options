@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vop"
+version = "0.1.0"
+description = "Valorisation d'options contre vérités fermées : Black-Scholes, arbre CRR à convergence mesurée, Monte Carlo à couverture testée, Longstaff-Schwartz contre le tableau 1 de 2001, Heston contre sa formule semi-fermée. Aucune donnée de marché."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Guillaume Vaudescal" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scipy>=1.13",
+  "matplotlib>=3.9",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+vop = "vop.cli:app"
+
+[project.urls]
+Repository = "https://github.com/Guilou001/15-valorisation-options"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vop"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501", "B008"]

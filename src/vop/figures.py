@@ -1,0 +1,103 @@
+"""Quatre figures : la convergence CRR, la réplication du tableau 1, la couverture, le biais LSM."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+OKABE_ITO = ["#0072B2", "#E69F00", "#009E73", "#D55E00", "#CC79A7", "#56B4E9", "#F0E442", "#000000"]
+
+
+def use_style():
+    import matplotlib as mpl
+    from cycler import cycler
+    from matplotlib.ticker import FuncFormatter
+
+    mpl.rcParams.update({
+        "figure.dpi": 200, "savefig.dpi": 200, "figure.constrained_layout.use": True,
+        "font.size": 11, "axes.titlesize": 12, "axes.prop_cycle": cycler(color=OKABE_ITO),
+        "axes.spines.top": False, "axes.spines.right": False,
+        "axes.grid": True, "grid.alpha": 0.3, "grid.linewidth": 0.5,
+        "legend.frameon": False, "lines.linewidth": 1.7,
+    })
+    return FuncFormatter(lambda v, _: f"{v:g}".replace(".", ","))
+
+
+def fig_convergence(ns: np.ndarray, errors: np.ndarray, dest: Path) -> None:
+    """|CRR - Black-Scholes| en log-log : la pente doit valoir -1 (convergence en 1/n)."""
+    fr = use_style()
+    fig, ax = plt.subplots(figsize=(7.8, 4.6))
+    ax.loglog(ns, errors, marker="o", ms=4, color=OKABE_ITO[0], label="erreur CRR européenne")
+    ref = errors[0] * ns[0] / ns
+    ax.loglog(ns, ref, linestyle="--", color=OKABE_ITO[3], label="pente -1 (théorie : erreur en 1/n)")
+    pente = np.polyfit(np.log(ns), np.log(errors), 1)[0]
+    ax.set_xlabel("Nombre de pas n")
+    ax.set_ylabel("Erreur absolue ($)")
+    ax.legend(fontsize=9, title=f"pente mesurée : {pente:.2f}".replace(".", ","))
+    ax.set_title("L'arbre CRR converge vers Black-Scholes au taux théorique en 1/n")
+    _ = fr
+    fig.savefig(dest)
+    plt.close(fig)
+
+
+def fig_table1(df: pd.DataFrame, dest: Path) -> None:
+    """Les 20 cas du tableau 1 : l'écart LSM (nôtre et publié) aux différences finies, en cents."""
+    fr = use_style()
+    fig, ax = plt.subplots(figsize=(9.5, 4.8))
+    x = np.arange(len(df))
+    ax.errorbar(x - 0.12, (df["lsm_notre"] - df["fd"]) * 100, yerr=2 * df["se_notre"] * 100,
+                fmt="o", ms=4, color=OKABE_ITO[0], label="notre LSM (± 2 e.t.)")
+    ax.errorbar(x + 0.12, (df["lsm_publie"] - df["fd"]) * 100, yerr=2 * df["se_publie"] * 100,
+                fmt="s", ms=4, color=OKABE_ITO[3], label="LSM publié (± 2 e.t.)")
+    ax.axhline(0, color="0.3", linewidth=0.9)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{int(r.s)}/{r.sigma:.1f}/{int(r.t)}".replace(".", ",")
+                        for r in df.itertuples()], rotation=60, fontsize=7.5)
+    ax.set_xlabel("Cas (S / volatilité / échéance)")
+    ax.set_ylabel("Écart aux différences finies (cents)")
+    ax.yaxis.set_major_formatter(fr)
+    ax.legend(fontsize=9)
+    ax.set_title("Vingt puts bermudéens : notre LSM retombe sur le tableau 1 de 2001, aux erreurs types près")
+    fig.savefig(dest)
+    plt.close(fig)
+
+
+def fig_coverage(df: pd.DataFrame, dest: Path) -> None:
+    """La couverture empirique des intervalles à 95 %, par taille d'échantillon."""
+    fr = use_style()
+    fig, ax = plt.subplots(figsize=(7.8, 4.4))
+    ax.plot(df["n_paths"], df["couverture"] * 100, marker="o", color=OKABE_ITO[0])
+    ax.axhline(95, color=OKABE_ITO[3], linestyle="--", label="nominal : 95 %")
+    lo = 95 - 1.96 * np.sqrt(0.95 * 0.05 / df["n_rep"].iloc[0]) * 100
+    hi = 95 + 1.96 * np.sqrt(0.95 * 0.05 / df["n_rep"].iloc[0]) * 100
+    ax.axhspan(lo, hi, color="0.92", zorder=0,
+               label="bande d'échantillonnage du test lui-même")
+    ax.set_xscale("log")
+    ax.set_xlabel("Trajectoires par estimation")
+    ax.set_ylabel("Couverture empirique (%)")
+    ax.yaxis.set_major_formatter(fr)
+    ax.legend(fontsize=9)
+    ax.set_title("Un intervalle à 95 % qui contient la vérité 95 fois sur 100 : vérifié, pas supposé")
+    fig.savefig(dest)
+    plt.close(fig)
+
+
+def fig_bias(df: pd.DataFrame, fd_value: float, dest: Path) -> None:
+    """Le biais du LSM selon le nombre de fonctions de base, en et hors échantillon."""
+    fr = use_style()
+    fig, ax = plt.subplots(figsize=(8.2, 4.6))
+    for col, name, color in [("in_sample", "mêmes trajectoires (le choix du papier)", OKABE_ITO[0]),
+                             ("out_sample", "trajectoires neuves (biais bas garanti)", OKABE_ITO[3])]:
+        ax.errorbar(df["n_basis"], (df[col] - fd_value) * 100, yerr=2 * df[f"se_{col}"] * 100,
+                    marker="o", ms=4, color=color, label=name)
+    ax.axhline(0, color="0.3", linewidth=0.9, label="différences finies (référence)")
+    ax.set_xlabel("Nombre de polynômes de Laguerre dans la base")
+    ax.set_ylabel("Écart à la référence (cents)")
+    ax.yaxis.set_major_formatter(fr)
+    ax.legend(fontsize=8.5)
+    ax.set_title("Ajouter des fonctions de base ne change presque rien : Longstaff et Schwartz avaient raison")
+    fig.savefig(dest)
+    plt.close(fig)
