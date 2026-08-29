@@ -86,18 +86,20 @@ def fig_coverage(df: pd.DataFrame, dest: Path) -> None:
 
 
 def fig_bias(df: pd.DataFrame, fd_value: float, dest: Path) -> None:
-    """Le biais du LSM selon le nombre de fonctions de base, en et hors échantillon."""
+    """Le biais du LSM selon le nombre de fonctions de base, moyenné sur les graines."""
     fr = use_style()
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
+    n_g = int(df["n_graines"].iloc[0]) if "n_graines" in df else 1
     for col, name, color in [("in_sample", "mêmes trajectoires (le choix du papier)", OKABE_ITO[0]),
                              ("out_sample", "trajectoires neuves (biais bas garanti)", OKABE_ITO[3])]:
         ax.errorbar(df["n_basis"], (df[col] - fd_value) * 100, yerr=2 * df[f"se_{col}"] * 100,
-                    marker="o", ms=4, color=color, label=name)
+                    marker="o", ms=4, color=color,
+                    label=f"{name}, moyenne de {n_g} graines (± 2 e.t. entre graines)")
     ax.axhline(0, color="0.3", linewidth=0.9, label="différences finies (référence)")
     ax.set_xlabel("Nombre de polynômes de Laguerre dans la base")
     ax.set_ylabel("Écart à la référence (cents)")
     ax.yaxis.set_major_formatter(fr)
-    ax.legend(fontsize=8.5)
-    ax.set_title("Ajouter des fonctions de base ne change presque rien : Longstaff et Schwartz avaient raison")
+    ax.legend(fontsize=8)
+    ax.set_title("Les trajectoires neuves retombent sur la vraie valeur ; la réutilisation ajoute un demi-cent")
     fig.savefig(dest)
     plt.close(fig)

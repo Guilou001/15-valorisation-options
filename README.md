@@ -21,13 +21,15 @@ d'entrevue des postes de pricing et de validation de modèles, poussé au bout.
    confiance Monte Carlo « à 95 % » contient la vraie valeur 94,0 à 96,2 fois sur 100
    (400 répétitions par taille, dans la bande d'échantillonnage du test). Un IC se
    vérifie, il ne se déclare pas. (Mesuré.)
-3. **Les deux controverses du LSM sont mesurées et tranchées ici.** Ajouter des fonctions
-   de base au-delà de trois ne change presque rien (2,304 à 2,307 sur le cas central,
-   moins d'une erreur type), comme le papier l'affirmait ; et la réutilisation des
-   trajectoires d'estimation pour la valorisation ne gonfle PAS le prix : les deux
-   variantes restent SOUS la référence, à un cent l'une de l'autre. Heston ferme la
-   marche : son Monte Carlo retombe sur sa formule semi-fermée à 0,69 erreur type.
-   (Mesuré.)
+3. **Les deux controverses du LSM sont mesurées, en multi-graines.** Sur 16 graines
+   indépendantes : la variante à trajectoires neuves retombe sur la vraie valeur
+   bermudéenne quelle que soit la base (2,3134 à 2,3144 contre 2,3140 à l'arbre) ; la
+   réutilisation des trajectoires d'estimation crée un PETIT biais haussier, +0,2 à
+   +0,5 cent, qui CROÎT avec le nombre de fonctions de base : le surapprentissage
+   existe, il se compte en cents, et une seule graine ne peut pas le voir (la première
+   version de ce dépôt s'y était laissée prendre, corrigé par la contre-vérification).
+   Heston ferme la marche : son Monte Carlo retombe sur sa formule semi-fermée à 0,69
+   erreur type. (Mesuré.)
 
 ## La question
 
@@ -56,13 +58,17 @@ antithétiques. Le PDF est public (miroir ETH Zurich) et jamais commité.
 **Comment lire cette figure.** L'erreur absolue de l'arbre européen contre Black-Scholes,
 en log-log : la droite de pente -1 est la théorie (erreur en 1/n), les points la suivent
 (pente mesurée -0,98). Doubler les pas divise l'erreur par deux : quiconque a « vérifié
-son arbre sur trois valeurs » n'a pas vu cette droite ; elle est le vrai certificat.
+son arbre sur trois valeurs » n'a pas vu cette droite ; elle est le vrai certificat. Une
+condition est déclarée : la droite est lisse parce que le cas montré est à la monnaie
+(S = K = 40), où le prix d'exercice tombe sur un nœud de l'arbre à n pair ; hors de ce
+cas, l'erreur du CRR OSCILLE dans une enveloppe en 1/n au lieu de descendre en ligne
+droite (comportement connu, mesuré par la contre-vérification sur S = 38).
 
 ## Volet 2 : le tableau 1, à la lettre bermudéenne
 
 Le piège que la légende du tableau énonce et que les réplications oublient : l'option est
 « exercisable 50 times per year ». Notre arbre bermudéen n'autorise donc l'exercice
-qu'aux pas alignés sur ces 50 dates (1 000 à 2 000 pas, 20 par période d'exercice), et
+qu'aux pas alignés sur ces 50 dates (1 000 à 2 000 pas, 20 par période d'exercice). Il
 retombe sur la colonne différences finies du papier à 0,005 $ près au pire (mesuré,
 `results/tables/tableau1_replication.csv`) : le gardien qui valide à la fois notre arbre
 ET la transcription. Notre LSM (mêmes 100 000 trajectoires antithétiques, base de
@@ -101,13 +107,16 @@ que l'erreur type est calculée sur les PAIRES, pas sur les trajectoires.
 ![Biais](results/figures/biais_lsm.png)
 
 **Comment lire cette figure.** Le cas central (S = 40, volatilité 0,20, 1 an ; référence
-2,314 $), estimé avec 2 à 8 polynômes de Laguerre, en réutilisant les trajectoires
-d'estimation (bleu, le choix du papier) ou sur des trajectoires neuves (orange, biais bas
-garanti). Deux verdicts : au-delà de trois polynômes, plus rien ne bouge (le papier
-l'affirmait, c'est mesuré) ; et le bleu reste SOUS l'orange d'environ un cent : la
-réutilisation ne crée pas ici le biais haut que le surapprentissage fait craindre, les
-deux estimateurs restant sous la référence. À deux polynômes seulement, le prix perd un
-cent et demi : la base trop courte coûte plus que la réutilisation.
+2,314 $), estimé avec 2 à 8 polynômes de Laguerre, chaque point étant la MOYENNE de
+16 graines indépendantes (barres : deux erreurs types entre graines ; 50 000 trajectoires
+par graine). L'orange (trajectoires neuves) reste collé à la référence : l'estimateur à
+biais bas garanti est ici quasi sans biais. Le bleu (réutilisation, le choix du papier)
+passe AU-DESSUS dès trois polynômes et s'en éloigne à mesure que la base grossit
+(+0,33 cent à 3 polynômes, +0,51 à 8, `results/tables/biais_lsm.csv`) : le
+surapprentissage de la règle d'exercice gonfle le prix, d'un demi-cent ici. La leçon de
+méthode vaut plus que le demi-cent : à une seule graine, le signe de l'écart bascule au
+hasard, et la première version de cette expérience concluait l'inverse (déclaré ; la
+contre-vérification adversariale l'a attrapé, l'expérience est désormais multi-graines).
 
 ## Volet 5 : Heston contre sa propre formule
 
@@ -123,17 +132,22 @@ antithétiques, 250 pas) retombe alors sur la formule : 8,9185 contre 8,9294, un
 
 ```bash
 uv sync --locked --all-extras
-uv run pytest        # 15 tests fermés, ~13 s, aucun réseau
-uv run vop lab       # les cinq volets : 4 tables, 4 figures (~3 min)
+uv run pytest        # 15 tests fermés, environ une seconde une fois les importations chaudes
+uv run vop lab       # les cinq volets : 4 tables, 4 figures (~6 min, expérience multi-graines comprise)
 ```
 
-Les tests : parité put-call exacte, la cellule 40/0,20/1 refaite à la main (2,066),
-les DEUX gardiens de transcription, convergence CRR vers Black-Scholes et son taux,
-ordre européen < bermudéen <= américain (et bermudéen 50 dates à moins d'un cent de
-l'américain), Monte Carlo à 4 erreurs types de la vérité, variance antithétique
-réduite, LSM au-dessus de l'européen et sous l'américain, LSM contre arbre bermudéen,
-trajectoires antithétiques exactes et martingale, base de Laguerre (L0 et L1 en forme
-fermée), Heston dégénéré en Black-Scholes, parité de Heston.
+Les tests, tous fermés :
+
+- parité put-call exacte ; la cellule 40/0,20/1 refaite à la main (2,066) ;
+- les DEUX gardiens de transcription du tableau 1 ;
+- convergence CRR vers Black-Scholes, et son taux en 1/n ;
+- ordre européen < bermudéen <= américain, le bermudéen à 50 dates restant à moins d'un
+  cent de l'américain ;
+- Monte Carlo à 4 erreurs types de la vérité ; variance antithétique réduite ;
+- LSM au-dessus de l'européen et sous l'américain ; LSM contre l'arbre bermudéen ;
+- trajectoires antithétiques exactes et martingale ; base de Laguerre (L0 et L1 en
+  forme fermée) ;
+- Heston dégénéré en Black-Scholes ; parité de Heston.
 
 ## Limites, avec statut
 
@@ -176,10 +190,12 @@ the finite-difference reference; transcription is LOCKED by two tested guards (t
 published Black-Scholes column matches our formula within 0.0011 on all 20 rows, and our
 Bermudan tree matches their FD column within 0.0052). (3) Monte Carlo confidence
 intervals are VERIFIED: empirical coverage of the 95 % interval is 94.0-96.2 % across
-400 independent repetitions per sample size. (4) Both LSM controversies are measured:
-adding basis functions beyond three changes nothing (as the paper claimed), and in-sample
-path reuse does NOT push the price up: both variants stay BELOW the reference, about one
-cent apart. (5) Heston's Euler Monte Carlo lands 0.69 standard errors from its own
+400 independent repetitions per sample size. (4) Both LSM controversies are measured on
+16 independent seeds. Fresh-path valuation lands on the true Bermudan value for every
+basis size. In-sample path reuse DOES add a small upward bias, +0.2 to +0.5 cents,
+growing with the basis size: overfitting is real, counts in cents, and is invisible to a
+single seed (the first version of this repo got it wrong; adversarial verification
+caught it). (5) Heston's Euler Monte Carlo lands 0.69 standard errors from its own
 semi-closed formula, with put-call parity exact and the Black-Scholes degeneracy tested.
 15 closed-form tests, ~13 s, no network.
 

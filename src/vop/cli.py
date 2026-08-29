@@ -68,15 +68,26 @@ def lab(out: Path = Path("results"), n_paths: int = 100_000) -> None:
     cov.to_csv(tables / "couverture_ic.csv", index=False)
     figures.fig_coverage(cov, figs / "couverture_ic.png")
 
-    # 4. le biais du LSM selon la base, en et hors échantillon (cas central 40/0,2/1)
+    # 4. le biais du LSM selon la base, en et hors échantillon (cas central 40/0,2/1) ;
+    # l'expérience est MULTI-GRAINES : un verdict tiré d'une seule graine est un tirage,
+    # pas une mesure (leçon de la contre-vérification adversariale)
     fd_ref = 2.314
+    n_seeds = 16
+    n_bias_paths = 50_000
     bias_rows = []
     for nb in (2, 3, 4, 5, 6, 8):
-        v_in, se_in = lsm_put(40.0, K, R, 0.20, 1.0, EX_PER_YEAR, n_paths, n_basis=nb, seed=11)
-        v_out, se_out = lsm_put(40.0, K, R, 0.20, 1.0, EX_PER_YEAR, n_paths, n_basis=nb,
-                                seed=11, out_of_sample=True)
-        bias_rows.append({"n_basis": nb, "in_sample": v_in, "se_in_sample": se_in,
-                          "out_sample": v_out, "se_out_sample": se_out})
+        v_in = np.array([lsm_put(40.0, K, R, 0.20, 1.0, EX_PER_YEAR, n_bias_paths,
+                                 n_basis=nb, seed=100 + s_)[0] for s_ in range(n_seeds)])
+        v_out = np.array([lsm_put(40.0, K, R, 0.20, 1.0, EX_PER_YEAR, n_bias_paths,
+                                  n_basis=nb, seed=100 + s_, out_of_sample=True)[0]
+                          for s_ in range(n_seeds)])
+        bias_rows.append({
+            "n_basis": nb, "n_graines": n_seeds,
+            "in_sample": float(v_in.mean()), "se_in_sample": float(v_in.std(ddof=1) / np.sqrt(n_seeds)),
+            "out_sample": float(v_out.mean()), "se_out_sample": float(v_out.std(ddof=1) / np.sqrt(n_seeds)),
+            "diff_in_out": float((v_in - v_out).mean()),
+            "se_diff": float((v_in - v_out).std(ddof=1) / np.sqrt(n_seeds)),
+        })
     bias = pd.DataFrame(bias_rows)
     bias.round(5).to_csv(tables / "biais_lsm.csv", index=False)
     figures.fig_bias(bias, fd_ref, figs / "biais_lsm.png")
