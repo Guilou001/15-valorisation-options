@@ -6,6 +6,8 @@ et Heston, chacun contraint de retomber sur une référence exacte. C'est l'exer
 d'entrevue des postes de pricing et de validation de modèles, poussé au bout.
 *English summary below.*
 
+Le même contenu en PDF : [rapport/rapport.pdf](rapport/rapport.pdf).
+
 ## En bref
 
 1. **Le tableau 1 de Longstaff et Schwartz (2001) est répliqué : 20 cas sur 20 dans les

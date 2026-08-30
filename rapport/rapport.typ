@@ -39,6 +39,8 @@
 
 Le seul dépôt du portfolio sans AUCUNE donnée de marché : toutes les vérités sont des formules fermées ou des tableaux publiés. Arbre binomial, Monte Carlo, Longstaff-Schwartz et Heston, chacun contraint de retomber sur une référence exacte. C'est l'exercice d'entrevue des postes de pricing et de validation de modèles, poussé au bout. _English summary below._
 
+Le même contenu en PDF : #link("rapport/rapport.pdf")[rapport/rapport.pdf].
+
 == En bref
 
 + *Le tableau 1 de Longstaff et Schwartz (2001) est répliqué : 20 cas sur 20 dans les deux erreurs types combinées.* Vingt puts BERMUDÉENS (exerçables 50 fois par année, pas américains continus : le détail qui fait échouer les réplications naïves), 100 000 trajectoires moitié antithétiques, base de Laguerre : écart maximal à la référence par différences finies de 3,7 cents. La transcription du tableau est verrouillée par deux gardiens testés : la colonne Black-Scholes publiée colle à notre formule au millième sur les 20 lignes, et notre arbre bermudéen colle à leur colonne différences finies à un demi-cent près. (Mesuré.)
