@@ -1,14 +1,24 @@
-# Valorisation d'options : construire un pricer, puis prouver qu'il est juste
+# Valoriser une option, puis contrôler chaque méthode
 
-Le seul dépôt du portfolio sans AUCUNE donnée de marché : toutes les vérités sont des
-formules fermées ou des tableaux publiés. Arbre binomial, Monte Carlo, Longstaff-Schwartz
-et Heston, chacun contraint de retomber sur une référence exacte. C'est l'exercice
-d'entrevue des postes de pricing et de validation de modèles, poussé au bout.
+Le prix d'une option dépend d'événements futurs que l'on ne connaît pas encore. Plusieurs méthodes peuvent l'estimer, mais une réponse plausible ne suffit pas : avant d'utiliser un modèle sur le marché, il faut vérifier qu'il retrouve des résultats que l'on connaît déjà. Le présent projet organise cette vérification sans utiliser aucune donnée de marché.
+
+Quatre familles sont étudiées : une formule directe, un arbre de prix, la simulation de nombreux scénarios et un modèle où la volatilité varie. Chaque méthode est comparée à une formule exacte ou à un tableau publié.
+
+**Résultat principal.** Les vingt options du tableau de Longstaff et Schwartz sont reproduites dans les deux erreurs types combinées. L'arbre binomial converge au taux théorique, avec une pente mesurée de -1,00, tandis que les intervalles annoncés à 95 % contiennent la valeur correcte dans 94,0 % à 96,2 % des répétitions. Enfin, la réutilisation des mêmes scénarios pour estimer et valoriser crée un biais de 0,8 à 1,0 cent. Ce biais augmente lorsque le modèle devient plus flexible.
+
+Afin de suivre les contrôles, nous présenterons d'abord les contrats et les valeurs de référence. Dans un deuxième temps, nous construirons l'arbre et la simulation, puis nous mesurerons leur convergence et leurs intervalles d'erreur. Ensuite, nous reproduirons l'exercice anticipé de Longstaff et Schwartz et le modèle de Heston. Enfin, nous expliquerons les biais mesurés, les limites et la procédure de reproduction.
+
+Le même contenu en PDF : [rapport/rapport.pdf](rapport/rapport.pdf).
+
+<details>
+<summary>Résumé en anglais</summary>
+
 *English summary below.*
 
 Le même contenu en PDF : [rapport/rapport.pdf](rapport/rapport.pdf).
 
-## En bref
+</details>
+## Les résultats en détail
 
 1. **Le tableau 1 de Longstaff et Schwartz (2001) est répliqué : 20 cas sur 20 dans les
    deux erreurs types combinées.** Vingt puts BERMUDÉENS (exerçables 50 fois par année,
@@ -150,7 +160,7 @@ Les tests, tous fermés :
 - Monte Carlo à 4 erreurs types de la vérité ; variance antithétique réduite ;
 - LSM au-dessus de l'européen et sous l'américain ; LSM contre l'arbre bermudéen ;
 - trajectoires antithétiques exactes et martingale ; base de Laguerre (L0 et L1 en
-  forme fermée) ;
+  formule exacte) ;
 - Heston dégénéré en Black-Scholes ; parité de Heston.
 
 ## Limites, avec statut
